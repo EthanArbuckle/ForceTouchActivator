@@ -30,11 +30,7 @@ BOOL hasIncreasedByPercent(float percent, float value1, float value2) {
     if (value1 >= value2 + (value2 / percent))
         return YES;
     return NO;
-}
-
-
-#define LASendEventWithName(eventName) \
-	[LASharedActivator sendEventToListener:[LAEvent eventWithName:eventName mode:[LASharedActivator currentEventMode]]]
+}	
 
 static NSString *ForceTouchActivator_eventName = @"ForceTouchActivatorEvent";
 
@@ -118,20 +114,25 @@ void touch_event(void* target, void* refcon, IOHIDServiceRef service, IOHIDEvent
                     return;
                 }
 
-                BKSHIDServicesCancelTouchesOnMainDisplay();
-
-                NSMutableArray *vPattern = [NSMutableArray array];
-                [vPattern addObject:[NSNumber numberWithBool:YES]];
-                [vPattern addObject:[NSNumber numberWithInt:100]];
-                NSDictionary *vDict = @{ @"VibePattern" : vPattern, @"Intensity" : @1 };
-
-                vibratePointer vibrate;
-                void *handle = dlopen(0, 9);
-                *(void**)(&vibrate) = dlsym(handle,"AudioServicesPlaySystemSoundWithVibration");
-                vibrate(kSystemSoundID_Vibrate, nil, vDict);
-
                 //trigger event
-                LASendEventWithName(ForceTouchActivator_eventName);
+                LAEvent *event = [LAEvent eventWithName:ForceTouchActivator_eventName mode:[LASharedActivator currentEventMode]];
+                [LASharedActivator sendEventToListener:event];
+
+                if ([event isHandled]) {
+
+                    BKSHIDServicesCancelTouchesOnMainDisplay();
+
+                    NSMutableArray *vPattern = [NSMutableArray array];
+                    [vPattern addObject:[NSNumber numberWithBool:YES]];
+                    [vPattern addObject:[NSNumber numberWithInt:100]];
+                    NSDictionary *vDict = @{ @"VibePattern" : vPattern, @"Intensity" : @1 };
+
+                    vibratePointer vibrate;
+                    void *handle = dlopen(0, 9);
+                    *(void**)(&vibrate) = dlsym(handle,"AudioServicesPlaySystemSoundWithVibration");
+                    vibrate(kSystemSoundID_Vibrate, nil, vDict);
+                
+                }
 
             }
 
