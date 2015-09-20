@@ -1,0 +1,10 @@
+Package: com.ethanarbuckle.forcetouchactivator
+Name: ForceTouchActivator
+Description: Trigger an activator event by firmly pressing down anywhere on your device's screen.
+Version: 1.0.0
+Priority: optional
+Section: Addons (Activator)
+Architecture: iphoneos-arm
+Depends: mobilesubstrate, libactivator
+Maintainer: Ethan Arbuckle
+Author: Ethan Arbuckle
