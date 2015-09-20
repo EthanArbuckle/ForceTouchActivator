@@ -107,7 +107,7 @@ void touch_event(void* target, void* refcon, IOHIDServiceRef service, IOHIDEvent
             touch.x = IOHIDEventGetFloatValue((__IOHIDEvent *)children[0], (IOHIDEventField)kIOHIDEventFieldDigitizerX) * [[UIScreen mainScreen] bounds].size.width;
             touch.y = IOHIDEventGetFloatValue((__IOHIDEvent *)children[0], (IOHIDEventField)kIOHIDEventFieldDigitizerY) * [[UIScreen mainScreen] bounds].size.height; 
 
-            if (hasIncreasedByPercent(10, touch.density, lastTouch.density) && hasIncreasedByPercent(5, touch.radius, lastTouch.radius) && hasIncreasedByPercent(5, touch.quality, lastTouch.quality)) {
+            if (hasIncreasedByPercent(15, touch.density, lastTouch.density) && hasIncreasedByPercent(10, touch.radius, lastTouch.radius) && hasIncreasedByPercent(5, touch.quality, lastTouch.quality)) {
                 
                 //make sure we arent being triggered by some swipe by canceling out touches that go beyond 10px of orig touch
                 if ((lastTouch.x - touch.x >= 10 || lastTouch.x - touch.x <= -10) || (lastTouch.y - touch.y >= 10 || lastTouch.y - touch.y <= -10)) {
@@ -131,7 +131,7 @@ void touch_event(void* target, void* refcon, IOHIDServiceRef service, IOHIDEvent
                     void *handle = dlopen(0, 9);
                     *(void**)(&vibrate) = dlsym(handle,"AudioServicesPlaySystemSoundWithVibration");
                     vibrate(kSystemSoundID_Vibrate, nil, vDict);
-                
+
                 }
 
             }
