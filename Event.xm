@@ -15,6 +15,16 @@ typedef void* (*clientCreatePointer)(const CFAllocatorRef);
 extern "C" void BKSHIDServicesCancelTouchesOnMainDisplay();
 typedef void* (*vibratePointer)(SystemSoundID inSystemSoundID, id arg, NSDictionary *vibratePattern);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+CFNotificationCenterRef CFNotificationCenterGetDistributedCenter(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 struct rawTouch {
     float density;
     float radius;
@@ -22,6 +32,8 @@ struct rawTouch {
     float x;
     float y;
 } lastTouch;
+
+NSUserDefaults *defaults;
 
 BOOL hasIncreasedByPercent(float percent, float value1, float value2) {
 
@@ -37,6 +49,7 @@ static NSString *ForceTouchActivator_eventName = @"ForceTouchActivatorEvent";
 @interface ForceTouchActivatorDataSource : NSObject <LAEventDataSource> {}
 
 + (id)sharedInstance;
+void prefsUpdate();
 
 @end
 
@@ -60,9 +73,18 @@ static NSString *ForceTouchActivator_eventName = @"ForceTouchActivatorEvent";
 		// Register our event
 		if (LASharedActivator.isRunningInsideSpringBoard) {
 			[LASharedActivator registerEventDataSource:self forEventName:ForceTouchActivator_eventName];
+            CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), (__bridge const void *)(self), (CFNotificationCallback)prefsUpdate, (CFStringRef)@"prefsUpdate", NULL, CFNotificationSuspensionBehaviorDrop);
+            prefsUpdate();
 		}
 	}
 	return self;
+}
+
+void prefsUpdate() {    
+    defaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.ethanarbuckle.forcetouchactivator"];
+    [defaults registerDefaults:@{ @"isEnabled" : @YES,
+                                        @"sensitivity" : @20,
+                                    }];
 }
 
 - (void)dealloc {
@@ -90,7 +112,6 @@ static NSString *ForceTouchActivator_eventName = @"ForceTouchActivatorEvent";
 
 @end
 
-
 void touch_event(void* target, void* refcon, IOHIDServiceRef service, IOHIDEventRef event) {
 
     if (IOHIDEventGetType(event) == kIOHIDEventTypeDigitizer) {
@@ -106,8 +127,11 @@ void touch_event(void* target, void* refcon, IOHIDServiceRef service, IOHIDEvent
             touch.quality = IOHIDEventGetFloatValue((__IOHIDEvent *)children[0], (IOHIDEventField)kIOHIDEventFieldDigitizerQuality);
             touch.x = IOHIDEventGetFloatValue((__IOHIDEvent *)children[0], (IOHIDEventField)kIOHIDEventFieldDigitizerX) * [[UIScreen mainScreen] bounds].size.width;
             touch.y = IOHIDEventGetFloatValue((__IOHIDEvent *)children[0], (IOHIDEventField)kIOHIDEventFieldDigitizerY) * [[UIScreen mainScreen] bounds].size.height; 
-
-            if (hasIncreasedByPercent(15, touch.density, lastTouch.density) && hasIncreasedByPercent(10, touch.radius, lastTouch.radius) && hasIncreasedByPercent(5, touch.quality, lastTouch.quality)) {
+            
+            float change = [defaults floatForKey:@"sensitivity"];
+            NSLog(@"change %f", change);
+           
+            if ([defaults boolForKey:@"isEnabled"] && hasIncreasedByPercent(change, touch.density, lastTouch.density) && hasIncreasedByPercent(change, touch.radius, lastTouch.radius) && hasIncreasedByPercent(5, touch.quality, lastTouch.quality)) {
                 
                 //make sure we arent being triggered by some swipe by canceling out touches that go beyond 10px of orig touch
                 if ((lastTouch.x - touch.x >= 10 || lastTouch.x - touch.x <= -10) || (lastTouch.y - touch.y >= 10 || lastTouch.y - touch.y <= -10)) {
@@ -132,6 +156,7 @@ void touch_event(void* target, void* refcon, IOHIDServiceRef service, IOHIDEvent
                     *(void**)(&vibrate) = dlsym(handle,"AudioServicesPlaySystemSoundWithVibration");
                     vibrate(kSystemSoundID_Vibrate, nil, vDict);
 
+
                 }
 
             }
@@ -143,13 +168,13 @@ void touch_event(void* target, void* refcon, IOHIDServiceRef service, IOHIDEvent
 
 %ctor {
 
+    [ForceTouchActivatorDataSource sharedInstance];
     clientCreatePointer clientCreate;
     void *handle = dlopen(0, 9);
     *(void**)(&clientCreate) = dlsym(handle,"IOHIDEventSystemClientCreate");
     IOHIDEventSystemClientRef ioHIDEventSystem = (__IOHIDEventSystemClient *)clientCreate(kCFAllocatorDefault);
     IOHIDEventSystemClientScheduleWithRunLoop(ioHIDEventSystem, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
     IOHIDEventSystemClientRegisterEventCallback(ioHIDEventSystem, (IOHIDEventSystemClientEventCallback)touch_event, NULL, NULL);
-
-    [ForceTouchActivatorDataSource sharedInstance];
+    ;
 
 }

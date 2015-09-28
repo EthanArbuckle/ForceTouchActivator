@@ -1,0 +1,10 @@
+{
+    entry = {
+	bundle = forcetouchactivator_prefs;
+	cell = PSLinkCell;
+	detail = forcetouchactivator_prefsListController;
+	icon = forcetouchactivator_prefs.png;
+	isController = 1;
+	label = ForceTouchActivator;
+    };
+}
